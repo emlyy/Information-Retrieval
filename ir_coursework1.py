@@ -110,7 +110,7 @@ def BIM(corpus, index, query):
         scored_documents.append((document, score_document(document, preprocessed_query, weights)))
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
     for document in ranked_documents[:10]:
-        print(document[1], document[0])
+        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
 
 #corpus, index = build_index(limit=1000) # build index for small subset
 #corpus, index = build_index() # build full index
@@ -125,4 +125,4 @@ index2  = read_from_disk('enron_index.json')
 
 print("#documents = {}, #terms = {}".format(len(corpus2), len(index2)))
 
-BIM(corpus2, index2, "job boring")
+BIM(corpus2, index2, "job Monday trip")
