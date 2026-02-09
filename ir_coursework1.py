@@ -63,10 +63,12 @@ def build_index(limit=None) :
         docid = len(corpus) - 1
         print('\rreading email #{}...'.format(docid), end='', file=sys.stderr)
 
-        for word in set(preprocess(email)) :
+        for word in preprocess(email) :
             if word not in index :
-                index[word] = []
-            index[word].append(docid)
+                index[word] = {}
+            if docid not in index[word]:
+                index[word][docid] = 0
+            index[word][docid] += 1
 
         if limit and len(corpus) == limit :
             break
@@ -101,8 +103,8 @@ def calculate_weights(df, N):
 def score_document(document, query, weights):
     return sum(weights[term] for term in query if term in document)
 
-def BIM(corpus, index, query):
-    df = calculate_df(index)
+def BIM(corpus, query, df):
+    #df = calculate_df(index)
     weights = calculate_weights(df, len(corpus))
     scored_documents = []
     preprocessed_query = preprocess(query)
@@ -112,17 +114,60 @@ def BIM(corpus, index, query):
     for document in ranked_documents[:10]:
         print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
 
+
+def calculate_doc_length(document):
+    return len(preprocess(document))
+
+def average_length_of_docs(corpus):
+    sum = 0
+    for doc in corpus:
+        sum += calculate_doc_length(doc)
+    return sum/len(corpus)
+
+def term_frequency(term, doc_id, index):
+    if str(doc_id) in index[term]:
+        return index[term][str(doc_id)]
+    return 0
+
+def RSV_d(doc_id, df, N, k_1, b, L_d, L_ave, query, index):
+    sum = 0
+    for term in preprocess(query):
+        tf = term_frequency(term, doc_id, index)
+        sum += math.log(N/df[term])*(((k_1+1)*tf)/(k_1*((1-b)+b*(L_d/L_ave))+tf))
+    return sum
+
+
+def Okapi_BM25(corpus, index, query, k_1, b, df):
+    L_ave = average_length_of_docs(corpus)
+    doc_id = 0
+    scored_documents = []
+    for document in corpus:
+        L_d = calculate_doc_length(document)
+        score = RSV_d(doc_id, df, len(corpus), k_1, b, L_d, L_ave, query, index)
+        scored_documents.append((document, score))
+        doc_id += 1
+    ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
+    for document in ranked_documents[:10]:
+        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+
+
 #corpus, index = build_index(limit=1000) # build index for small subset
 #corpus, index = build_index() # build full index
 
-#write_to_disk(corpus, 'enron_text.json')
-#write_to_disk(index,  'enron_index.json')
+#write_to_disk(corpus, 'enron_text2.json')
+#write_to_disk(index,  'enron_index2.json')
 
 #print("#documents = {}, #terms = {}".format(len(corpus), len(index)))
 
-corpus2 = read_from_disk('enron_text.json')
-index2  = read_from_disk('enron_index.json')
+corpus2 = read_from_disk('enron_text2.json')
+index2  = read_from_disk('enron_index2.json')
+
+query = "here is our forecast"
+df = calculate_df(index2)
 
 print("#documents = {}, #terms = {}".format(len(corpus2), len(index2)))
 
-BIM(corpus2, index2, "job Monday trip")
+print("BIM document scores:")
+BIM(corpus2, query, df)
+print("Okapi BM25 document scores:")
+Okapi_BM25(corpus2, index2, query, 1.2, 0.75, df)
