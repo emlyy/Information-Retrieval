@@ -150,6 +150,48 @@ def Okapi_BM25(corpus, index, query, k_1, b, df):
     for document in ranked_documents[:10]:
         print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
 
+def calculate_tf_idf_scores(index, query, N, df):
+    tf_idf_scores = {}
+    tf_idf_norm = {}
+    tf_idf_norm["query"] = 0
+    for term in set(preprocess(query)):
+        if term not in index:
+            continue
+
+        idf = math.log(N/df[term])
+
+        tf_query = query.count(term)
+        tf_idf_norm["query"] += (tf_query*idf)**2
+
+        for doc_id, tf in index[term].items():
+            print(doc_id, tf, term)
+            if doc_id not in tf_idf_scores:
+                tf_idf_scores[doc_id] = 0
+                tf_idf_norm[doc_id] = 0
+            tf_idf_scores[doc_id] += tf*idf*tf_query*idf
+            tf_idf_norm[doc_id] += (tf*idf)**2
+
+    print(tf_idf_scores)
+    return tf_idf_scores, tf_idf_norm
+
+def sim(scores, norms, doc_id):
+    if doc_id not in scores:
+        return 0
+    return scores[doc_id]/(math.sqrt(norms[doc_id])*math.sqrt(norms["query"]))
+
+
+def vector_space_model(corpus, index, query):
+    doc_id = 0
+    scored_documents = []
+    scores, norms = calculate_tf_idf_scores(index, query, len(corpus), df)
+    for document in corpus:
+        score = sim(scores, norms, str(doc_id))
+        scored_documents.append((document, score))
+        doc_id += 1
+    ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
+    for document in ranked_documents[:10]:
+        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+
 
 #corpus, index = build_index(limit=1000) # build index for small subset
 #corpus, index = build_index() # build full index
@@ -171,3 +213,5 @@ print("BIM document scores:")
 BIM(corpus2, query, df)
 print("Okapi BM25 document scores:")
 Okapi_BM25(corpus2, index2, query, 1.2, 0.75, df)
+print("Vector space model document scores:")
+vector_space_model(corpus2, index2, query)
