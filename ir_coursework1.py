@@ -1,6 +1,8 @@
 import sys, csv, json
 csv.field_size_limit(sys.maxsize)
 import math
+import numpy as np
+import pandas as pd
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -104,15 +106,17 @@ def score_document(document, query, weights):
     return sum(weights[term] for term in query if term in document)
 
 def BIM(corpus, query, df):
-    #df = calculate_df(index)
     weights = calculate_weights(df, len(corpus))
     scored_documents = []
     preprocessed_query = preprocess(query)
+    doc_id = 0
     for document in corpus:
-        scored_documents.append((document, score_document(document, preprocessed_query, weights)))
+        scored_documents.append((document, score_document(document, preprocessed_query, weights), doc_id))
+        doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
     for document in ranked_documents[:10]:
         print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    return ranked_documents
 
 
 def calculate_doc_length(document):
@@ -144,11 +148,12 @@ def Okapi_BM25(corpus, index, query, k_1, b, df):
     for document in corpus:
         L_d = calculate_doc_length(document)
         score = RSV_d(doc_id, df, len(corpus), k_1, b, L_d, L_ave, query, index)
-        scored_documents.append((document, score))
+        scored_documents.append((document, score, doc_id))
         doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
     for document in ranked_documents[:10]:
         print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    return ranked_documents
 
 def calculate_tf_idf_scores(index, query, N, df):
     tf_idf_scores = {}
@@ -172,6 +177,7 @@ def calculate_tf_idf_scores(index, query, N, df):
             tf_idf_norm[doc_id] += (tf*idf)**2
 
     print(tf_idf_scores)
+    print(tf_idf_norm)
     return tf_idf_scores, tf_idf_norm
 
 def sim(scores, norms, doc_id):
@@ -186,12 +192,23 @@ def vector_space_model(corpus, index, query):
     scores, norms = calculate_tf_idf_scores(index, query, len(corpus), df)
     for document in corpus:
         score = sim(scores, norms, str(doc_id))
-        scored_documents.append((document, score))
+        scored_documents.append((document, score, doc_id))
         doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
     for document in ranked_documents[:10]:
         print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    return ranked_documents
 
+def make_table(documents):
+    data = []
+    for document in documents[:10]:
+        data.append([document[2], document[1], calculate_doc_length(document[0])])
+    print_table(data)
+
+def print_table(data):
+    table = pd.DataFrame(data, columns=["Doc_id", "Score", "Length"])
+    table.index = np.arange(1, 11)
+    print(table)
 
 #corpus, index = build_index(limit=1000) # build index for small subset
 #corpus, index = build_index() # build full index
@@ -204,14 +221,20 @@ def vector_space_model(corpus, index, query):
 corpus2 = read_from_disk('enron_text2.json')
 index2  = read_from_disk('enron_index2.json')
 
-query = "here is our forecast"
+query = "forecast" #"traveling is fun if forecast is great for business" #"here is our forecast"
 df = calculate_df(index2)
 
 print("#documents = {}, #terms = {}".format(len(corpus2), len(index2)))
 
 print("BIM document scores:")
-BIM(corpus2, query, df)
+bim = BIM(corpus2, query, df)
 print("Okapi BM25 document scores:")
-Okapi_BM25(corpus2, index2, query, 1.2, 0.75, df)
+bm25 = Okapi_BM25(corpus2, index2, query, 1.2, 0.75, df)
 print("Vector space model document scores:")
-vector_space_model(corpus2, index2, query)
+vsm = vector_space_model(corpus2, index2, query)
+print("BIM: ")
+make_table(bim)
+print("VSM: ")
+make_table(vsm)
+print("BM25: ")
+make_table(bm25)
