@@ -165,7 +165,8 @@ def calculate_tf_idf_scores(index, query, N, df):
 
         idf = math.log(N/df[term])
 
-        tf_query = query.count(term)
+        tf_query = preprocess(query).count(term)
+
         tf_idf_norm["query"] += (tf_query*idf)**2
 
         for doc_id, tf in index[term].items():
@@ -177,7 +178,7 @@ def calculate_tf_idf_scores(index, query, N, df):
             tf_idf_norm[doc_id] += (tf*idf)**2
 
     print(tf_idf_scores)
-    print(tf_idf_norm)
+    #print(tf_idf_norm)
     return tf_idf_scores, tf_idf_norm
 
 def sim(scores, norms, doc_id):
@@ -221,7 +222,7 @@ def print_table(data):
 corpus2 = read_from_disk('enron_text2.json')
 index2  = read_from_disk('enron_index2.json')
 
-query = "forecast" #"traveling is fun if forecast is great for business" #"here is our forecast"
+query = "Mike McDonald" #"gas supply agreement" #"forecast" #"traveling is fun if forecast is great for business" #"here is our forecast"
 df = calculate_df(index2)
 
 print("#documents = {}, #terms = {}".format(len(corpus2), len(index2)))
