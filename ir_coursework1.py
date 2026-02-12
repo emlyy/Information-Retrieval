@@ -114,8 +114,8 @@ def BIM(corpus, query, df):
         scored_documents.append((document, score_document(document, preprocessed_query, weights), doc_id))
         doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
-    for document in ranked_documents[:10]:
-        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    #for document in ranked_documents[:10]:
+        #print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
     return ranked_documents
 
 
@@ -151,8 +151,8 @@ def Okapi_BM25(corpus, index, query, k_1, b, df):
         scored_documents.append((document, score, doc_id))
         doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
-    for document in ranked_documents[:10]:
-        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    #for document in ranked_documents[:10]:
+        #print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
     return ranked_documents
 
 def calculate_tf_idf_scores(index, query, N, df):
@@ -170,14 +170,14 @@ def calculate_tf_idf_scores(index, query, N, df):
         tf_idf_norm["query"] += (tf_query*idf)**2
 
         for doc_id, tf in index[term].items():
-            print(doc_id, tf, term)
+            #print(doc_id, tf, term)
             if doc_id not in tf_idf_scores:
                 tf_idf_scores[doc_id] = 0
                 tf_idf_norm[doc_id] = 0
             tf_idf_scores[doc_id] += tf*idf*tf_query*idf
             tf_idf_norm[doc_id] += (tf*idf)**2
 
-    print(tf_idf_scores)
+    #print(tf_idf_scores)
     #print(tf_idf_norm)
     return tf_idf_scores, tf_idf_norm
 
@@ -196,8 +196,8 @@ def vector_space_model(corpus, index, query):
         scored_documents.append((document, score, doc_id))
         doc_id += 1
     ranked_documents = sorted(scored_documents, key=lambda x: x[1], reverse=True)
-    for document in ranked_documents[:10]:
-        print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
+    #for document in ranked_documents[:10]:
+        #print(f"Document score: {document[1]} \nDocument email message preview: {document[0][:150]}")
     return ranked_documents
 
 def make_table(documents):
@@ -222,16 +222,16 @@ def print_table(data):
 corpus2 = read_from_disk('enron_text2.json')
 index2  = read_from_disk('enron_index2.json')
 
-query = "Mike McDonald" #"gas supply agreement" #"forecast" #"traveling is fun if forecast is great for business" #"here is our forecast"
+query = "travelling is fun if forecast is great" #for business" # "forecast" #"Mike McDonald meeting gas supply"
 df = calculate_df(index2)
 
 print("#documents = {}, #terms = {}".format(len(corpus2), len(index2)))
 
-print("BIM document scores:")
+#print("BIM document scores:")
 bim = BIM(corpus2, query, df)
-print("Okapi BM25 document scores:")
+#print("Okapi BM25 document scores:")
 bm25 = Okapi_BM25(corpus2, index2, query, 1.2, 0.75, df)
-print("Vector space model document scores:")
+#print("Vector space model document scores:")
 vsm = vector_space_model(corpus2, index2, query)
 print("BIM: ")
 make_table(bim)
